@@ -1,6 +1,8 @@
 package org.example.day_5_practice_project_one.service;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import org.example.day_5_practice_project_one.dto.WeatherDto;
+import org.example.day_5_practice_project_one.mapper.WeatherResponseMapper;
 import org.example.day_5_practice_project_one.model.WeatherResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -13,6 +15,11 @@ public class WeatherService {
     private final String apiKey = dotenv.get("WEATHER_API_KEY");
     private final String apiUrl = dotenv.get("OPEN_WEATHER_API_URL");
 
+    private WeatherResponseMapper weatherResponseMapper;
+
+    public WeatherService(WeatherResponseMapper weatherResponseMapper) {
+        this.weatherResponseMapper = weatherResponseMapper;
+    }
 
 
     public Double getTemperature(String city) {
@@ -24,16 +31,16 @@ public class WeatherService {
         return response != null ? response.getMain().getTemp() : null;
     }
 
-    public WeatherResponse getAllInfoOfCityWeather(String city) {
+    public WeatherDto getWeatherDto(String city) {
         String url = String.format("%s?q=%s&appid=%s&units=metric", apiUrl, city, apiKey);
         RestTemplate restTemplate = new RestTemplate();
         WeatherResponse response = restTemplate.getForObject(url, WeatherResponse.class);
-        return response;
+        return response != null ? weatherResponseMapper.toDto(response) : null;
     }
 
     public String getPrettyWeatherInfo(String city) {
-        WeatherResponse response = getAllInfoOfCityWeather(city);
-        if (response == null) {
+        WeatherDto dto = getWeatherDto(city);
+        if (dto == null) {
             return "Weather data not available.";
         }
 
@@ -44,13 +51,13 @@ public class WeatherService {
             🌬 Вітер: %.1f м/с
             📖 Опис: %s
             """,
-                response.getName(),
-                response.getMain().getTemp(),
-                response.getMain().getTemp_min(),
-                response.getMain().getTemp_max(),
-                response.getMain().getHumidity(),
-                response.getWind().getSpeed(),
-                response.getWeather().get(0).getDescription()
+                dto.getCity(),
+                dto.getTemp(),
+                dto.getTempMin(),
+                dto.getTempMax(),
+                dto.getHumidity(),
+                dto.getWindSpeed(),
+                dto.getDescription()
         );
     }
 
